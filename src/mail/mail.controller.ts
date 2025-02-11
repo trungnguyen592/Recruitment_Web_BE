@@ -4,7 +4,10 @@ import { Public, ResponseMessage } from 'src/decorator/customize';
 import { from } from 'rxjs';
 import { MailerService } from '@nestjs-modules/mailer';
 import { SoftDeleteModel } from 'soft-delete-plugin-mongoose';
-import { Subscriber, SubscriberDocument } from 'src/subscribers/schemas/subscriber.schema';
+import {
+  Subscriber,
+  SubscriberDocument,
+} from 'src/subscribers/schemas/subscriber.schema';
 import { Job, JobDocument } from 'src/jobs/schemas/job.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { Cron, CronExpression } from '@nestjs/schedule';
@@ -13,13 +16,14 @@ import { ApiTags } from '@nestjs/swagger';
 @ApiTags('mail')
 @Controller('mail')
 export class MailController {
-  constructor(private readonly mailService: MailService,
+  constructor(
+    private readonly mailService: MailService,
     private mailerService: MailerService,
     @InjectModel(Subscriber.name)
     private subscriberModel: SoftDeleteModel<SubscriberDocument>,
     @InjectModel(Job.name)
-    private jobModel: SoftDeleteModel<JobDocument>
-  ) { }
+    private jobModel: SoftDeleteModel<JobDocument>,
+  ) {}
 
   @Cron(CronExpression.EVERY_30_SECONDS)
   testCron() {
@@ -28,35 +32,36 @@ export class MailController {
 
   @Get()
   @Public()
-  @ResponseMessage("Test email")
-  @Cron("0 0 * * *") //0.00 am every sunday
+  @ResponseMessage('Test email')
+  @Cron('0 0 * * *') //0.00 am every sunday
   async handleTestEmail() {
     const subscribers = await this.subscriberModel.find({});
     for (const subs of subscribers) {
       const subsSkills = subs.skills;
-      const jobWithMatchingSkills = await this.jobModel.find({ skills: { $in: subsSkills } });
+      const jobWithMatchingSkills = await this.jobModel.find({
+        skills: { $in: subsSkills },
+      });
       if (jobWithMatchingSkills?.length) {
-        const jobs = jobWithMatchingSkills.map(item => {
+        const jobs = jobWithMatchingSkills.map((item) => {
           return {
             name: item.name,
             company: item.company.name,
-            salary: `${item.salary}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') + " đ",
-            skills: item.skills
-          }
-        })
+            salary:
+              `${item.salary}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') + ' đ',
+            skills: item.skills,
+          };
+        });
         await this.mailerService.sendMail({
-          to: "quangluan1702@gmail.com",
+          to: 'pokiwar192@gmail.com',
           from: '"Support Team" <support@example.com>',
           subject: 'Welcome to Nice App! Comfirm your Email',
-          template: "test",
+          template: 'test',
           context: {
             receiver: subs.name,
-            jobs: jobs
-          }
+            jobs: jobs,
+          },
         });
       }
     }
-
   }
-
 }

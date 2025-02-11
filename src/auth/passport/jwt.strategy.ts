@@ -10,19 +10,19 @@ import { RolesService } from 'src/roles/roles.service';
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     private configService: ConfigService,
-    private rolesService: RolesService
+    private rolesService: RolesService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: configService.get<string>("JWT_ACCESS_TOKEN_SECRET"),
+      secretOrKey: configService.get<string>('JWT_ACCESS_TOKEN_SECRET'),
     });
   }
 
   async validate(payload: IUser) {
     const { _id, name, email, role } = payload;
-    // //can gan them permissions vao req.user
-    const userRole = role as unknown as { _id: string; name: string }
+    // can gan them permissions vao req.user
+    const userRole = role as unknown as { _id: string; name: string };
     const temp = (await this.rolesService.findOne(userRole._id)).toObject();
     //req.user
     return {
@@ -30,8 +30,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       name,
       email,
       role,
-      permissions: temp?.permissions ?? []
+      permissions: temp?.permissions ?? [],
     };
-
   }
 }

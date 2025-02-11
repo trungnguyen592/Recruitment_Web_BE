@@ -21,10 +21,13 @@ import { ThrottlerModule } from '@nestjs/throttler';
 @Module({
   imports: [
     ScheduleModule.forRoot(),
-    ThrottlerModule.forRoot({
-      ttl: 60,
-      limit: 20,
-    }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60,
+        limit: 20,
+      },
+    ]),
+
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
@@ -32,12 +35,12 @@ import { ThrottlerModule } from '@nestjs/throttler';
         connectionFactory: (connection) => {
           connection.plugin(softDeletePlugin);
           return connection;
-        }
+        },
       }),
       inject: [ConfigService],
     }),
     ConfigModule.forRoot({
-      isGlobal: true
+      isGlobal: true,
     }),
     UsersModule,
     AuthModule,
@@ -50,10 +53,8 @@ import { ThrottlerModule } from '@nestjs/throttler';
     DatabasesModule,
     SubscribersModule,
     MailModule,
-
   ],
   controllers: [AppController],
   providers: [AppService],
-
 })
-export class AppModule { }
+export class AppModule {}

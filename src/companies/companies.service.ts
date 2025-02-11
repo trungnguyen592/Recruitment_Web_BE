@@ -10,19 +10,18 @@ import { isEmpty } from 'class-validator';
 import mongoose from 'mongoose';
 @Injectable()
 export class CompaniesService {
-
   constructor(
     @InjectModel(Company.name)
-    private companyModel: SoftDeleteModel<CompanyDocument>
-  ) { }
+    private companyModel: SoftDeleteModel<CompanyDocument>,
+  ) {}
 
   create(createCompanyDto: CreateCompanyDto, user: IUser) {
     return this.companyModel.create({
       ...createCompanyDto,
       createdBy: {
         _id: user._id,
-        email: user.email
-      }
+        email: user.email,
+      },
     });
   }
 
@@ -31,36 +30,33 @@ export class CompaniesService {
     delete filter.current;
     delete filter.pageSize;
 
-    let offset = (+currentPage - 1) * (+limit);
+    let offset = (+currentPage - 1) * +limit;
     let defaultLimit = +limit ? +limit : 10;
 
     const totalItems = (await this.companyModel.find(filter)).length;
     const totalPages = Math.ceil(totalItems / defaultLimit);
 
-
-    const result = await this.companyModel.find(filter)
+    const result = await this.companyModel
+      .find(filter)
       .skip(offset)
       .limit(defaultLimit)
-
       .sort(sort as any)
       .populate(population)
       .exec();
-
     return {
       meta: {
         current: currentPage,
         pageSize: limit,
         pages: totalPages,
-        total: totalItems
+        total: totalItems,
       },
-      result
-    }
-
+      result,
+    };
   }
 
   async findOne(id: string) {
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      throw new BadRequestException(`not founnd company with id=${id}`)
+      throw new BadRequestException(`not founnd company with id=${id}`);
     }
 
     return await this.companyModel.findById(id);
@@ -73,11 +69,10 @@ export class CompaniesService {
         ...updateCompanyDto,
         updatedBy: {
           _id: user._id,
-          email: user.email
-
-        }
-      }
-    )
+          email: user.email,
+        },
+      },
+    );
   }
 
   async remove(id: string, user: IUser) {
@@ -86,12 +81,12 @@ export class CompaniesService {
       {
         deletedBy: {
           _id: user._id,
-          email: user.email
-        }
-      }
-    )
+          email: user.email,
+        },
+      },
+    );
     return this.companyModel.softDelete({
-      _id: id
-    })
+      _id: id,
+    });
   }
 }
