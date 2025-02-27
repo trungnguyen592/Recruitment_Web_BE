@@ -7,6 +7,8 @@ import { Resume, ResumeSchema } from './schemas/resume.schema';
 @Module({
   controllers: [ResumesController],
   providers: [ResumesService],
-  imports: [MongooseModule.forFeature([{ name: Resume.name, schema: ResumeSchema }])],
+  imports: [
+    MongooseModule.forFeature([{ name: Resume.name, schema: ResumeSchema }]),
+  ],
 })
-export class ResumesModule { }
+export class ResumesModule {}

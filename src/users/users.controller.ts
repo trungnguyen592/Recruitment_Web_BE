@@ -6,15 +6,14 @@ import {
   Patch,
   Param,
   Delete,
-  UseGuards,
   Query,
+  BadRequestException,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Public, ResponseMessage, User } from 'src/decorator/customize';
 import { IUser } from './users.interfacce';
-import { query } from 'express';
 import { ApiTags } from '@nestjs/swagger';
 
 @ApiTags('users')
@@ -41,6 +40,25 @@ export class UsersController {
   ) {
     return this.usersService.findAll(+currentPage, +limit, qs);
   }
+
+  @Patch('change-password')
+  async changePassword(@User() user: IUser, @Body() body: any) {
+    const { oldPassword, newPassword } = body;
+    if (!oldPassword || !newPassword) {
+      throw new BadRequestException('oldPassword và newPassword là bắt buộc');
+    }
+
+    // Kiểm tra user hợp lệ
+    if (!user || !user._id) {
+      throw new BadRequestException('Không tìm thấy thông tin người dùng');
+    }
+
+    // Chuyển _id sang dạng string để đảm bảo định dạng đúng
+    const userId = user._id.toString();
+
+    return this.usersService.changePassword(userId, oldPassword, newPassword);
+  }
+
   @Public()
   @Get(':id')
   @ResponseMessage('Fetch user by id')
@@ -50,9 +68,13 @@ export class UsersController {
   }
 
   @ResponseMessage('update a User')
-  @Patch()
-  async update(@Body() updateUserDto: UpdateUserDto, @User() user: IUser) {
-    let updatedUser = await this.usersService.update(updateUserDto, user);
+  @Patch(':id')
+  async update(
+    @Param('id') id: string,
+    @Body() updateUserDto: UpdateUserDto,
+    @User() user: IUser,
+  ) {
+    let updatedUser = await this.usersService.update(id, updateUserDto, user);
     return updatedUser;
   }
 

@@ -25,15 +25,15 @@ export class MailController {
     private jobModel: SoftDeleteModel<JobDocument>,
   ) {}
 
-  @Cron(CronExpression.EVERY_30_SECONDS)
-  testCron() {
-    // console.log(">>>call me")
-  }
+  // @Cron(CronExpression.EVERY_30_SECONDS)
+  // testCron() {
+  //   console.log('>>>call me');
+  // }
 
   @Get()
   @Public()
   @ResponseMessage('Test email')
-  @Cron('0 0 * * *') //0.00 am every sunday
+  @Cron('0 0 * * 0') //0.00 am every sunday
   async handleTestEmail() {
     const subscribers = await this.subscriberModel.find({});
     for (const subs of subscribers) {
@@ -55,9 +55,9 @@ export class MailController {
           to: 'pokiwar192@gmail.com',
           from: '"Support Team" <support@example.com>',
           subject: 'Welcome to Nice App! Comfirm your Email',
-          template: 'test',
+          template: 'mail',
           context: {
-            receiver: subs.name,
+            subscribers: subs.name,
             jobs: jobs,
           },
         });

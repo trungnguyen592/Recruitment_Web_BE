@@ -16,11 +16,11 @@ import { Job, JobSchema } from 'src/jobs/schemas/job.schema';
     MailerModule.forRootAsync({
       useFactory: async (configService: ConfigService) => ({
         transport: {
-          host: configService.get<string>("EMAIL_HOST"),
+          host: configService.get<string>('EMAIL_HOST'),
           secure: false,
           auth: {
-            user: configService.get<string>("EMAIL_AUTH_USER"),
-            pass: configService.get<string>("EMAIL_AUTH_PASS"),
+            user: configService.get<string>('EMAIL_AUTH_USER'),
+            pass: configService.get<string>('EMAIL_AUTH_PASS'),
           },
         },
         template: {
@@ -30,7 +30,8 @@ import { Job, JobSchema } from 'src/jobs/schemas/job.schema';
             strict: true,
           },
         },
-        preview: configService.get<string>("EMAIL_PREVIEW") === 'true' ? true : false,
+        preview:
+          configService.get<string>('EMAIL_PREVIEW') === 'true' ? true : false,
       }),
       inject: [ConfigService],
     }),
@@ -38,9 +39,10 @@ import { Job, JobSchema } from 'src/jobs/schemas/job.schema';
     MongooseModule.forFeature([
       { name: Subscriber.name, schema: SubscriberSchema },
       { name: Job.name, schema: JobSchema },
-    ])
+    ]),
   ],
   controllers: [MailController],
-  providers: [MailService]
+  providers: [MailService],
+  exports: [MailService],
 })
-export class MailModule { }
+export class MailModule {}

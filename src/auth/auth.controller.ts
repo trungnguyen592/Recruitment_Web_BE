@@ -6,6 +6,7 @@ import {
   Body,
   Res,
   Req,
+  BadRequestException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './local-auth.guard';
@@ -16,6 +17,7 @@ import { IUser } from 'src/users/users.interfacce';
 import { RolesService } from 'src/roles/roles.service';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { ApiBody, ApiTags } from '@nestjs/swagger';
+import { UsersService } from 'src/users/users.service';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -23,6 +25,7 @@ export class AuthController {
   constructor(
     private authService: AuthService,
     private rolesService: RolesService,
+    private UsersService: UsersService,
   ) {}
   @Public()
   @UseGuards(LocalAuthGuard)
@@ -67,5 +70,28 @@ export class AuthController {
     @User() user: IUser,
   ) {
     return this.authService.logout(response, user);
+  }
+
+  @Public()
+  @Post('/send-otp')
+  @ResponseMessage('Send OTP to reset password')
+  async forgotPassword(@Body('email') email: string) {
+    return this.authService.sendOtp(email);
+  }
+
+  @Public()
+  @Post('reset-password')
+  @ResponseMessage('Get OTP to reset password')
+  async resetPassword(
+    @Body() body: { email: string; otp: string; newPassword: string },
+  ) {
+    const { email, otp, newPassword } = body;
+    const isOtpValid = await this.UsersService.verifyOtp(email, otp);
+    if (!isOtpValid) {
+      throw new BadRequestException('Mã OTP không hợp lệ hoặc đã hết hạn');
+    }
+    await this.UsersService.updatePassword(email, newPassword);
+
+    return { message: 'Đổi mật khẩu thành công' };
   }
 }

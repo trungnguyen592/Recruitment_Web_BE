@@ -16,14 +16,12 @@ async function bootstrap() {
   const reflector = app.get(Reflector);
   app.useGlobalGuards(new JwtAuthGuard(reflector));
   app.useGlobalInterceptors(new TransformInterceptor(reflector));
-
   app.useStaticAssets(join(__dirname, '..', 'public'));
-  app.setBaseViewsDir(join(__dirname, '..', 'views'));
-
-  app.setViewEngine('ejs');
+  // app.setBaseViewsDir(join(__dirname, '..', 'views'));
+  // app.setViewEngine('ejs');
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,
+      whitelist: true, //Tự động loại bỏ các field không được định nghĩa trong DTB.
     }),
   );
   //config cookie

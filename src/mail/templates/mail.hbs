@@ -1,0 +1,83 @@
+<html>
+  <head>
+    <title>Thông Báo Việc Làm Phù Hợp</title>
+    <meta http-equiv='Content-Type' content='text/html; charset=UTF-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+  </head>
+  <body
+    style='margin: 0; padding: 0; min-width: 100%; font-family: Arial, sans-serif; font-size: 16px; line-height: 1.5; background-color: #FAFAFA; color: #222222;'
+  >
+    <div style='max-width: 600px; margin: 0 auto;'>
+      <!-- Header Section -->
+      <div style='background-color: #d10024; padding: 24px; color: #ffffff;'>
+        <h1
+          style='font-size: 24px; font-weight: 700; line-height: 1.25; margin-top: 0; margin-bottom: 15px; text-align: center;'
+        >
+          Thông Báo Việc Làm Phù Hợp
+        </h1>
+      </div>
+
+      <!-- Main Content -->
+      <div style='padding: 24px; background-color: #ffffff;'>
+        <p style='margin-top: 0; margin-bottom: 24px;'>Xin chào
+          {{subscribers}},</p>
+
+        <p style='margin-top: 0; margin-bottom: 24px;'>
+          Chúng tôi đã tìm thấy một số cơ hội việc làm phù hợp với kỹ năng của
+          bạn:
+        </p>
+
+        <div
+          style='background-color: #f6f6f6; padding: 15px; margin-bottom: 24px;'
+        >
+          <h2
+            style='font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 15px;'
+          >
+            Danh Sách Việc Làm
+          </h2>
+
+          {{#each jobs}}
+            <div
+              style='margin-bottom: 15px; border-bottom: 1px solid #e0e0e0; padding-bottom: 15px;'
+            >
+              <p style='margin: 0; font-weight: bold;'>{{name}}</p>
+              <p style='margin: 0;'>Công ty: {{company}}</p>
+              <p style='margin: 0;'>Mức lương: {{salary}}</p>
+              <p style='margin: 0;'>Kỹ năng yêu cầu: {{skills}}</p>
+            </div>
+          {{/each}}
+        </div>
+
+        <div
+          style='background-color: #f6f6f6; padding: 15px; margin-bottom: 24px;'
+        >
+          <h2
+            style='font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 15px;'
+          >
+            Thông Tin Thêm
+          </h2>
+          <p style='margin: 0; margin-bottom: 10px;'><strong>Thời gian cập nhật:</strong>
+            Hàng ngày</p>
+          <p style='margin: 0; margin-bottom: 10px;'><strong>Nguồn:</strong>
+            Hệ thống tuyển dụng</p>
+          <p style='margin: 0; margin-bottom: 10px;'><strong>Liên hệ hỗ trợ:</strong>
+            support@example.com</p>
+        </div>
+      </div>
+
+      <!-- Footer Section -->
+      <div style='background-color: #f6f6f6; padding: 24px;'>
+        <p style='margin-top: 0; margin-bottom: 24px;'>
+          Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ chúng tôi tại
+          <a
+            href='mailto:support@example.com'
+            target='_blank'
+            style='color: #0070f3; text-decoration:none;'
+          >
+            Bộ phận hỗ trợ
+          </a>
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

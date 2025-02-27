@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateUserDto, RegisterUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectModel } from '@nestjs/mongoose';
@@ -6,12 +10,13 @@ import { User as UserM, UserDocument } from './schemas/user.schema';
 import mongoose, { Model } from 'mongoose';
 import { genSaltSync, hashSync, compareSync } from 'bcryptjs';
 import { SoftDeleteModel } from 'soft-delete-plugin-mongoose';
-import { use } from 'passport';
 import { IUser } from './users.interfacce';
 import { User } from 'src/decorator/customize';
 import aqp from 'api-query-params';
 import { USER_ROLE } from 'src/databases/sample';
 import { Role, RoleDocument } from 'src/roles/schemas/role.schema';
+import * as bcrypt from 'bcryptjs';
+import { Types } from 'mongoose';
 @Injectable()
 export class UsersService {
   constructor(
@@ -74,9 +79,9 @@ export class UsersService {
       .skip(offset)
       .limit(defaultLimit)
       .sort(sort as any)
-      .select('-password')
-      .populate(population)
-      .exec();
+      .select('-password') // Loại bỏ trường password khi trả về
+      .populate(population) // Dùng để lấy dữ liệu từ các field liên quan
+      .exec(); // Thực thi truy vấn
     return {
       meta: {
         current: currentPage,
@@ -111,9 +116,9 @@ export class UsersService {
   isValidPassword(password: string, hash: string) {
     return compareSync(password, hash);
   }
-  async update(updateUserDto: UpdateUserDto, user: IUser) {
+  async update(id: string, updateUserDto: UpdateUserDto, user: IUser) {
     const updated = await this.userModel.updateOne(
-      { _id: updateUserDto._id },
+      { _id: id },
       {
         ...updateUserDto,
         updatedBy: {
@@ -121,6 +126,7 @@ export class UsersService {
           email: user.email,
         },
       },
+      { new: true },
     );
     return updated;
   }
@@ -155,8 +161,13 @@ export class UsersService {
     if (!mongoose.Types.ObjectId.isValid(id)) return `not found user`;
 
     const foundUser = await this.userModel.findById(id);
-    if (foundUser && foundUser.email === 'admin@gmail.com') {
-      throw new BadRequestException('Khong the xoa tai khoan admin@gmail.com');
+    if (
+      foundUser &&
+      ['admin@gmail.com', 'ito@gmail.com'].includes(foundUser.email)
+    ) {
+      throw new BadRequestException(
+        `Không thể xóa tài khoản ${foundUser.email}`,
+      );
     }
 
     await this.userModel.updateOne(
@@ -176,10 +187,55 @@ export class UsersService {
   updateUserToken = async (refreshToken: string, _id: string) => {
     return await this.userModel.updateOne({ _id }, { refreshToken });
   };
+
   findUserByToken = async (refreshToken: string) => {
     return await this.userModel.findOne({ refreshToken }).populate({
       path: 'role',
       select: { name: 1 },
     });
   };
+
+  async findByEmail(email: string): Promise<UserDocument | null> {
+    return this.userModel.findOne({ email }).exec();
+  }
+
+  // 🔍 Xác thực OTP
+  async verifyOtp(email: string, otp: string): Promise<boolean> {
+    const user = await this.userModel.findOne({ email });
+    if (!user || user.otp !== otp) return false;
+    return true;
+  }
+
+  // 🔄 Cập nhật mật khẩu
+  async updatePassword(email: string, newPassword: string): Promise<void> {
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await this.userModel.updateOne({ email }, { password: hashedPassword });
+  }
+
+  // 🔄 Đổi mật khẩu
+  async changePassword(
+    userId: string,
+    oldPassword: string,
+    newPassword: string,
+  ) {
+    // Chuyển userId sang ObjectId nếu chưa đúng định dạng
+    if (!Types.ObjectId.isValid(userId)) {
+      throw new BadRequestException('ID người dùng không hợp lệ');
+    }
+
+    const user = await this.userModel.findById(new Types.ObjectId(userId));
+    if (!user) {
+      throw new NotFoundException('Người dùng không tồn tại');
+    }
+
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) {
+      throw new BadRequestException('Mật khẩu cũ không đúng');
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+
+    return { message: 'Đổi mật khẩu thành công' };
+  }
 }

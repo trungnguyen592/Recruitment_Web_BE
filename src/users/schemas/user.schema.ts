@@ -6,64 +6,66 @@ export type UserDocument = HydratedDocument<User>;
 
 @Schema({ timestamps: true })
 export class User {
-    @Prop()
-    name: string;
+  @Prop()
+  name: string;
 
-    @Prop({ required: true })
+  @Prop({ required: true })
+  email: string;
+
+  @Prop({ required: true })
+  password: string;
+
+  @Prop()
+  age: number;
+
+  @Prop()
+  gender: string;
+
+  @Prop()
+  address: string;
+
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Company' })
+  company: mongoose.Schema.Types.ObjectId;
+
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: Role.name })
+  role: mongoose.Schema.Types.ObjectId;
+
+  @Prop()
+  refreshToken: string;
+
+  @Prop({ type: Object })
+  createdBy: {
+    _id: mongoose.Schema.Types.ObjectId;
     email: string;
+  };
+  @Prop({ type: Object })
+  updatedBy: {
+    _id: mongoose.Schema.Types.ObjectId;
+    email: string;
+  };
+  @Prop({ type: Object })
+  deletedBy: {
+    _id: mongoose.Schema.Types.ObjectId;
+    email: string;
+  };
 
-    @Prop({ required: true })
-    password: string;
+  @Prop()
+  otp: string;
 
-    @Prop()
-    age: number;
+  @Prop()
+  otpExpires: Date;
 
-    @Prop()
-    gender: string;
+  @Prop()
+  createdAt: Date;
 
-    @Prop()
-    address: string;
+  @Prop()
+  updateAt: Date;
 
-    @Prop({ type: Object })
-    company: {
-        _id: mongoose.Schema.Types.ObjectId;
-        name: string;
-    }
+  @Prop()
+  isDeleted: boolean;
 
-    @Prop({ type: mongoose.Schema.Types.ObjectId, ref: Role.name })
-    role: mongoose.Schema.Types.ObjectId;
-
-    @Prop()
-    refreshToken: string;
-
-
-    @Prop({ type: Object })
-    createdBy: {
-        _id: mongoose.Schema.Types.ObjectId;
-        email: string;
-    }
-    @Prop({ type: Object })
-    updatedBy: {
-        _id: mongoose.Schema.Types.ObjectId;
-        email: string;
-    }
-    @Prop({ type: Object })
-    deletedBy: {
-        _id: mongoose.Schema.Types.ObjectId;
-        email: string;
-    }
-
-    @Prop()
-    createdAt: Date;
-
-    @Prop()
-    updateAt: Date;
-
-    @Prop()
-    isDeleted: boolean;
-
-    @Prop()
-    deleteAt: Date;
+  @Prop()
+  deleteAt: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

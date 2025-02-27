@@ -7,6 +7,10 @@ import { ConfigService } from '@nestjs/config';
 import ms from 'ms';
 import { response, Response } from 'express';
 import { RolesService } from 'src/roles/roles.service';
+import { MailService } from 'src/mail/mail.service';
+import * as otpGenerator from 'otp-generator';
+import * as bcrypt from 'bcryptjs';
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -14,6 +18,7 @@ export class AuthService {
     private jwtService: JwtService,
     private configService: ConfigService,
     private rolesService: RolesService,
+    private readonly mailService: MailService,
   ) {}
   //username / pass la 2 tham so thu vien passport no nem ve
   async validateUser(username: string, pass: string): Promise<any> {
@@ -35,6 +40,8 @@ export class AuthService {
   }
   async login(user: IUser, response: Response) {
     const { _id, name, email, role, permissions } = user;
+    // Lấy thông tin company từ user (nếu có)
+    const company = user.company || null;
     const payload = {
       sub: 'token login',
       iss: 'from server',
@@ -42,6 +49,7 @@ export class AuthService {
       name,
       email,
       role,
+      company,
     };
 
     const refresh_token = this.createRefreshToken(payload);
@@ -63,6 +71,7 @@ export class AuthService {
         name,
         email,
         role,
+        company,
         //permissions,
       },
     };
@@ -147,4 +156,50 @@ export class AuthService {
     response.clearCookie('refresh_token');
     return 'ok';
   };
+
+  // Gửi OTP qua email
+  async sendOtp(email: string) {
+    const user = await this.usersService.findByEmail(email);
+    if (!user) {
+      throw new BadRequestException('Email không tồn tại');
+    }
+
+    // Tạo OTP
+    const otpCode = otpGenerator.generate(6, {
+      digits: true,
+      alphabets: false,
+      upperCase: false,
+      specialChars: false,
+    });
+
+    // Lưu OTP vào database với thời gian hết hạn 2 phút
+    user.otp = otpCode;
+    user.otpExpires = new Date(Date.now() + 2 * 60 * 1000);
+    await user.save();
+
+    // Gửi OTP qua email
+    await this.mailService.sendOtpToEmail(user.email, otpCode);
+    return { message: 'OTP đã được gửi đến email của bạn' };
+  }
+
+  // Xác thực OTP để đặt lại mật khẩu
+  async verifyOtp(email: string, otpCode: string, newPassword: string) {
+    const user = await this.usersService.findByEmail(email);
+    if (!user) {
+      throw new BadRequestException('Email không tồn tại');
+    }
+
+    // Kiểm tra OTP hợp lệ
+    if (!user.otp || user.otp !== otpCode || new Date() > user.otpExpires) {
+      throw new BadRequestException('OTP không hợp lệ hoặc đã hết hạn');
+    }
+
+    // Cập nhật mật khẩu mới
+    user.password = await bcrypt.hash(newPassword, 10);
+    user.otp = null;
+    user.otpExpires = null;
+    await user.save();
+
+    return { message: 'Mật khẩu đã được đặt lại thành công' };
+  }
 }

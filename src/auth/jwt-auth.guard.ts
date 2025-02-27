@@ -44,9 +44,6 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     const targetMethod = request.method;
     const targetEndpoint = request.route?.path as string;
     const permissions = user?.permissions ?? [];
-    // console.log('User Permissions:', permissions);
-    // console.log('Request Method:', targetMethod);
-    // console.log('Request Endpoint:', targetEndpoint);
     let isExist = permissions.find(
       (permission) =>
         targetMethod === permission.method &&
@@ -56,7 +53,6 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     if (!isExist && !isSkipPermission) {
       throw new ForbiddenException('Ban khong co quyen truy cap Endpoint');
     }
-
     return user;
   }
 }
