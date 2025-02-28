@@ -14,7 +14,11 @@ import {
   FileFieldsInterceptor,
   FileInterceptor,
 } from '@nestjs/platform-express';
-import { Public, ResponseMessage } from 'src/decorator/customize';
+import {
+  ALLOWED_MIME_TYPES,
+  Public,
+  ResponseMessage,
+} from 'src/decorator/customize';
 import { ApiTags } from '@nestjs/swagger';
 import fs from 'fs';
 import { MulterExceptionFilter } from './multer.filter';
@@ -22,16 +26,13 @@ import { MulterExceptionFilter } from './multer.filter';
 @Controller('files')
 @UseFilters(MulterExceptionFilter)
 export class FilesController {
-  private readonly allowedTypes = new Map([
-    ['application/pdf', 'PDF'],
-    ['application/msword', 'DOC'],
-    [
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'DOCX',
-    ],
-  ]);
-
   constructor(private readonly filesService: FilesService) {}
+
+  /**
+   * Upload một file đơn lẻ
+   * @param file File được upload
+   * @returns Thông tin file đã upload
+   */
   @Public()
   @Post('upload')
   @ResponseMessage('Upload single file')
@@ -44,20 +45,20 @@ export class FilesController {
         );
       }
 
-      // Validate file type
-      if (!this.allowedTypes.has(file.mimetype)) {
+      // Validate loại file
+      if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
         throw new UnprocessableEntityException(
           `Invalid file type. Only ${Array.from(
-            this.allowedTypes.values(),
+            ALLOWED_MIME_TYPES.values(),
           ).join(', ')} files are allowed`,
         );
       }
 
-      // Validate file size
-      const maxSize = 2 * 1024 * 1024;
+      // Kiểm tra kích thước file
+      const maxSize = 5 * 1024 * 1024;
       if (file.size > maxSize) {
         throw new UnprocessableEntityException(
-          'File size must be less than 2MB',
+          'File size must be less than 5MB',
         );
       }
 
@@ -66,22 +67,23 @@ export class FilesController {
         originalName: file.originalname,
         mimeType: file.mimetype,
         size: file.size,
-        fileType: this.allowedTypes.get(file.mimetype),
+        fileType: ALLOWED_MIME_TYPES.get(file.mimetype),
       };
     } catch (error) {
       if (file?.path && fs.existsSync(file.path)) {
         fs.unlinkSync(file.path);
       }
-
       throw new UnprocessableEntityException(
-        error instanceof UnprocessableEntityException
-          ? error.message
-          : 'Failed to upload file. Please try again',
+        'Failed to upload file. Please try again',
       );
     }
   }
 
-  //Upload nhiều file từ nhiều trường khác nhau (có kiểm soát).
+  /**
+   * Upload nhiều file từ nhiều trường khác nhau
+   * @param files Danh sách file được upload
+   * @returns Thông tin các file đã upload
+   */
   @Public()
   @Post('upload-multiple')
   @ResponseMessage('Upload multiple files')
@@ -104,7 +106,7 @@ export class FilesController {
 
     const validateFile = (file?: Express.Multer.File) => {
       if (!file) return null;
-      if (!/^(doc|docx|pdf)$/i.test(file.mimetype)) {
+      if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
         throw new BadRequestException(
           `File ${file.originalname} không đúng định dạng.`,
         );
@@ -126,7 +128,11 @@ export class FilesController {
     };
   }
 
-  //Upload bất kỳ file nào từ bất kỳ trường nào (không cần khai báo trước).
+  /**
+   * Upload bất kỳ file nào từ bất kỳ trường nào (không cần khai báo trước)
+   * @param files Danh sách file được upload
+   * @returns Thông tin các file đã upload
+   */
   @Public()
   @Post('upload-any')
   @ResponseMessage('Upload multiple files with any field names')
@@ -136,9 +142,8 @@ export class FilesController {
       throw new BadRequestException('Không có file nào được upload.');
     }
 
-    // Kiểm tra từng file
     const uploadedFiles = files.map((file) => {
-      if (!/^(jpg|jpeg|png|gif|txt|doc|docx|pdf)$/i.test(file.mimetype)) {
+      if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
         throw new BadRequestException(
           `File ${file.originalname} không đúng định dạng.`,
         );
@@ -157,23 +162,3 @@ export class FilesController {
     };
   }
 }
-//   @Get()
-//   findAll() {
-//     return this.filesService.findAll();
-//   }
-
-//   @Get(':id')
-//   findOne(@Param('id') id: string) {
-//     return this.filesService.findOne(+id);
-//   }
-
-//   @Patch(':id')
-//   update(@Param('id') id: string, @Body() updateFileDto: UpdateFileDto) {
-//     return this.filesService.update(+id, updateFileDto);
-//   }
-
-//   @Delete(':id')
-//   remove(@Param('id') id: string) {
-//     return this.filesService.remove(+id);
-//   }
-// }

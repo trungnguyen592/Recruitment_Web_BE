@@ -3,119 +3,89 @@ import {
   MulterModuleOptions,
   MulterOptionsFactory,
 } from '@nestjs/platform-express';
-import fs from 'fs';
 import { diskStorage } from 'multer';
+import { existsSync, mkdirSync } from 'fs';
 import path, { join, extname, resolve } from 'path';
+import { ALLOWED_MIME_TYPES } from 'src/decorator/customize';
 
 @Injectable()
 export class MulterConfigService implements MulterOptionsFactory {
-  private readonly uploadRoot = 'public/images/';
-  private readonly allowedMimeTypes = new Map([
-    ['application/pdf', 'PDF'],
-    ['application/msword', 'DOC'],
-    [
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'DOCX',
-    ],
-  ]);
+  private readonly uploadRoot = 'public/images/'; // Thư mục gốc lưu file upload
 
-  getRootPath(): string {
+  /**
+   * Lấy đường dẫn root của dự án
+   * @returns Đường dẫn thư mục gốc của dự án
+   */
+  private getRootPath(): string {
     return process.cwd();
   }
 
-  ensureExists(targetDirectory: string) {
+  /**
+   * Đảm bảo thư mục tồn tại, nếu chưa có thì tạo mới
+   * @param targetDirectory Đường dẫn thư mục cần kiểm tra/tạo
+   */
+  private ensureExists(targetDirectory: string): void {
     const absolutePath = resolve(this.getRootPath(), targetDirectory);
-    if (!fs.existsSync(absolutePath)) {
-      fs.mkdirSync(absolutePath, { recursive: true });
+    if (!existsSync(absolutePath)) {
+      mkdirSync(absolutePath, { recursive: true });
     }
   }
 
+  /**
+   * Loại bỏ các ký tự đặc biệt khỏi tên file để tránh lỗi
+   * @param fileName Tên file gốc
+   * @returns Tên file đã được xử lý
+   */
+  private sanitizeFileName(fileName: string): string {
+    return fileName.replace(/[^a-zA-Z0-9-_]/g, '_'); // Chỉ giữ lại chữ cái, số, dấu gạch ngang, gạch dưới
+  }
+
+  /**
+   * Cấu hình Multer cho việc upload file
+   * @returns Cấu hình MulterModuleOptions
+   */
   createMulterOptions(): MulterModuleOptions {
     return {
       storage: diskStorage({
+        /**
+         * Xác định thư mục lưu file dựa vào header `folder_type`
+         */
         destination: (req, file, cb) => {
-          const folder = Array.isArray(req.headers.folder_type)
-            ? req.headers.folder_type[0]
-            : req.headers.folder_type || 'default';
+          const folder =
+            typeof req.headers.folder_type === 'string'
+              ? req.headers.folder_type
+              : 'default';
           const uploadPath = join(this.getRootPath(), this.uploadRoot, folder);
           this.ensureExists(uploadPath);
           cb(null, uploadPath);
         },
+        /**
+         * Xác định tên file sau khi upload
+         */
         filename: (req, file, cb) => {
           const fileExt = extname(file.originalname);
-          const baseName = path.basename(file.originalname, fileExt);
+          const baseName = this.sanitizeFileName(
+            path.basename(file.originalname, fileExt),
+          );
           const finalName = `${baseName}-${Date.now()}${fileExt}`;
           cb(null, finalName);
         },
       }),
       limits: {
-        fileSize: 2 * 1024 * 1024, // 2MB
+        fileSize: 5 * 1024 * 1024, // Giới hạn dung lượng file: 5MB
       },
       fileFilter: (req, file, cb) => {
-        if (!this.allowedMimeTypes.has(file.mimetype)) {
-          return cb(
-            new Error(
-              `Only ${Array.from(this.allowedMimeTypes.values()).join(
-                ', ',
-              )} files are allowed`,
-            ),
-            false,
+        /**
+         * Kiểm tra MIME type của file upload có hợp lệ không
+         */
+        if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
+          console.log(
+            `File upload bị từ chối: ${file.originalname} (${file.mimetype})`,
           );
+          return cb(null, false); // Trả về false thay vì throw lỗi
         }
         cb(null, true);
       },
     };
   }
 }
-
-// import { Injectable } from '@nestjs/common';
-// import {
-//   MulterModuleOptions,
-//   MulterOptionsFactory,
-// } from '@nestjs/platform-express';
-// import fs from 'fs';
-// import { diskStorage } from 'multer';
-// import path, { join } from 'path';
-
-// @Injectable()
-// export class MulterConfigService implements MulterOptionsFactory {
-//   getRootPath = () => {
-//     return process.cwd();
-//   };
-
-//   ensureExists(targetDirectory: string) {
-//     fs.mkdir(targetDirectory, { recursive: true }, (error) => {
-//       if (!error) {
-//         console.log('Directory successfully created, or it already exists');
-//         return;
-//       }
-//       switch (error.code) {
-//         case 'EEXIST':
-//           break;
-//         case 'ENOTDIR':
-//           break;
-//         default:
-//           console.log(error);
-//           break;
-//       }
-//     });
-//   }
-
-//   createMulterOptions(): MulterModuleOptions {
-//     return {
-//       storage: diskStorage({
-//         destination: (req, file, cb) => {
-//           const folder = req?.headers?.folder_type ?? 'default';
-//           this.ensureExists(`public/images/${folder}`);
-//           cb(null, join(this.getRootPath(), `public/images/${folder}`));
-//         },
-//         filename: (req, file, cb) => {
-//           let extName = path.extname(file.originalname);
-//           let baseName = path.basename(file.originalname, extName);
-//           let finalName = `${baseName}-${Date.now()}${extName}`;
-//           cb(null, finalName);
-//         },
-//       }),
-//     };
-//   }
-// }

@@ -17,9 +17,13 @@ export const IS_PUBLIC_PERMISSION = 'isPublicPermission';
 export const SkipCheckPermission = () =>
   SetMetadata(IS_PUBLIC_PERMISSION, true);
 
-export const CurrentUser = createParamDecorator(
-  (data: unknown, ctx: ExecutionContext) => {
-    const request = ctx.switchToHttp().getRequest();
-    return request.user; // Lấy thông tin user từ request
-  },
-);
+export const ALLOWED_MIME_TYPES = new Map([
+  ['application/pdf', 'PDF'],
+  ['application/msword', 'DOC'],
+  [
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'DOCX',
+  ],
+  ['image/jpeg', 'JPG'],
+  ['image/png', 'PNG'],
+]);

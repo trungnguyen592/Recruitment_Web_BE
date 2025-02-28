@@ -59,6 +59,7 @@
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
+    "@compodoc/compodoc": "^1.1.26",
     "@types/express": "^5.0.0",
     "@types/jest": "^29.5.14",
     "@types/ms": "^0.7.34",

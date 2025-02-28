@@ -50,6 +50,7 @@ export class AuthService {
       email,
       role,
       company,
+      permissions,
     };
 
     const refresh_token = this.createRefreshToken(payload);

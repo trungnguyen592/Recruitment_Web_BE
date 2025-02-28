@@ -13,20 +13,40 @@ import { IUser } from 'src/users/users.interfacce';
 export class JobsService {
   constructor(
     @InjectModel(Job.name)
-    private jobModel: SoftDeleteModel<UserDocument>
-  ) { }
+    private jobModel: SoftDeleteModel<UserDocument>,
+  ) {}
 
   async create(createJobDto: CreateJobDto, user: IUser) {
     const {
-      name, skills, company, salary, quantity, level, description, startDate, endDate, isActive, location
+      name,
+      skills,
+      company,
+      salary,
+      quantity,
+      level,
+      description,
+      startDate,
+      endDate,
+      isActive,
+      location,
     } = createJobDto;
 
     const newJob = await this.jobModel.create({
-      name, skills, company, salary, quantity, level, description, startDate, endDate, isActive, location,
+      name,
+      skills,
+      company,
+      salary,
+      quantity,
+      level,
+      description,
+      startDate,
+      endDate,
+      isActive,
+      location,
       createdBy: {
         _id: user._id,
-        email: user.email
-      }
+        email: user.email,
+      },
     });
 
     return newJob;
@@ -37,13 +57,14 @@ export class JobsService {
     delete filter.current;
     delete filter.pageSize;
 
-    const offset = (+currentPage - 1) * (+limit);
+    const offset = (+currentPage - 1) * +limit;
     const defaultLimit = +limit ? +limit : 10;
 
     const totalItems = await this.jobModel.countDocuments(filter);
     const totalPages = Math.ceil(totalItems / defaultLimit);
 
-    const result = await this.jobModel.find(filter)
+    const result = await this.jobModel
+      .find(filter)
       .skip(offset)
       .limit(defaultLimit)
       .sort(sort as any)
@@ -55,15 +76,55 @@ export class JobsService {
         current: currentPage,
         pageSize: limit,
         pages: totalPages,
-        total: totalItems
+        total: totalItems,
       },
-      result
+      result,
+    };
+  }
+
+  async findAllAdmin(
+    currentPage: number,
+    limit: number,
+    qs: string,
+    user: any,
+  ) {
+    const { filter, sort, population, projection } = aqp(qs);
+    delete filter.current;
+    delete filter.pageSize;
+
+    // Kiểm tra nếu user là HR, thì chỉ lấy Resume của công ty của họ
+    if (user.role.name === 'HR' && user.company) {
+      filter.companyId = new mongoose.Types.ObjectId(user.company);
+    }
+
+    let offset = (+currentPage - 1) * +limit;
+    let defaultLimit = +limit ? +limit : 10;
+
+    const totalItems = await this.jobModel.countDocuments(filter);
+    const totalPages = Math.ceil(totalItems / defaultLimit);
+
+    const result = await this.jobModel
+      .find(filter)
+      .skip(offset)
+      .limit(defaultLimit)
+      .sort(sort as any)
+      .populate(population)
+      .select(projection as any)
+      .exec();
+
+    return {
+      meta: {
+        current: currentPage,
+        pageSize: limit,
+        pages: totalPages,
+        total: totalItems,
+      },
+      result,
     };
   }
 
   async findOne(id: string) {
-    if (!mongoose.Types.ObjectId.isValid(id))
-      return `Job not found`;
+    if (!mongoose.Types.ObjectId.isValid(id)) return `Job not found`;
 
     return await this.jobModel.findById(id);
   }
@@ -75,26 +136,25 @@ export class JobsService {
         ...updateJobDto,
         updatedBy: {
           _id: user._id,
-          email: user.email
-        }
-      }
+          email: user.email,
+        },
+      },
     );
 
     return updated;
   }
 
   async remove(id: string, user: IUser) {
-    if (!mongoose.Types.ObjectId.isValid(id))
-      return `Job not found`;
+    if (!mongoose.Types.ObjectId.isValid(id)) return `Job not found`;
 
     await this.jobModel.updateOne(
       { _id: id },
       {
         deletedBy: {
           _id: user._id,
-          email: user.email
-        }
-      }
+          email: user.email,
+        },
+      },
     );
 
     return this.jobModel.softDelete({ _id: id });
